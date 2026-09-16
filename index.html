@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareKonek+ | Senior Health & Emergency System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4); }
+            70% { transform: scale(1); box-shadow: 0 0 0 16px rgba(56, 189, 248, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(56, 189, 248, 0); }
+        }
+        .sos-active {
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes watch-pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+        .watch-sensor-glow {
+            animation: watch-pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 font-sans min-h-screen text-slate-800 dark:text-slate-100 pb-12 transition-colors duration-300">
+
+    <!-- Navbar -->
+    <nav class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50 shadow-md transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <!-- Logo -->
+            <div class="flex items-center gap-3">
+                <div class="bg-sky-500/10 dark:bg-sky-500/20 p-2 rounded-xl border border-sky-500/30 dark:border-sky-500/40">
+                    <i class="fa-solid fa-heart-pulse text-sky-600 dark:text-sky-400 text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">CareKonek<span class="text-sky-500 dark:text-sky-400">+</span></h1>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">SMART ELDERLY TELEHEALTH PLATFORM</p>
+                </div>
+            </div>
+
+            <!-- View Switcher Tabs -->
+            <div class="flex bg-slate-100 dark:bg-slate-900/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700/60">
+                <button id="tabPatient" onclick="switchTab('patient')" class="px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white shadow-md transition">
+                    <i class="fa-solid fa-user text-xs mr-1.5"></i> Senior View
+                </button>
+                <button id="tabCaregiver" onclick="switchTab('caregiver')" class="px-4 py-2 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
+                    <i class="fa-solid fa-user-nurse text-xs mr-1.5"></i> Nurse Dashboard
+                </button>
+            </div>
+
+            <!-- Theme Toggle & Telemetry Badge Controls -->
+            <div class="flex items-center gap-3">
+                <!-- LIGHT / DARK MODE TOGGLE BUTTON -->
+                <button onclick="toggleTheme()" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-xs text-slate-700 dark:text-sky-300 font-semibold transition shadow-sm">
+                    <i id="themeIcon" class="fa-solid fa-moon text-indigo-500 dark:text-amber-400"></i>
+                    <span id="themeText">Dark Mode</span>
+                </button>
+                
+                <!-- CLICKABLE CareBand Telemetry & Battery Badge Button -->
+                <button onclick="openWatchModal()" class="flex items-center gap-3 bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-950 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 text-xs shadow-inner cursor-pointer transition active:scale-95 group">
+                    <div class="flex items-center gap-2 border-r border-slate-300 dark:border-slate-700/80 pr-3">
+                        <span class="relative flex h-2.5 w-2.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-slate-700 dark:text-slate-300 font-semibold group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">CareBand Live</span>
+                    </div>
+
+                    <!-- Dynamic Battery Meter -->
+                    <div id="carebandBatteryContainer" class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                        <i id="carebandBatteryIcon" class="fa-solid fa-battery-full text-sm"></i>
+                        <span id="carebandBatteryVal" class="text-xs">88%</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+
+        <!-- =================================================== -->
+        <!-- VIEW 1: SENIOR / PATIENT INTERFACE -->
+        <!-- =================================================== -->
+        <div id="viewPatient" class="space-y-6">
+
+            <!-- Dynamic Patient Active Profile Banner -->
+            <div class="bg-gradient-to-r from-sky-100 to-white dark:from-sky-900/40 dark:to-slate-800 p-6 rounded-3xl border border-sky-200 dark:border-sky-500/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md">
+                <div class="flex items-center gap-4">
+                    <img id="patientAvatar" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80" alt="Patient Avatar" class="w-16 h-16 rounded-2xl object-cover border-2 border-sky-400/50 shadow-md">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 bg-sky-500/10 border border-sky-500/30 text-sky-600 dark:text-sky-400 rounded-full text-[10px] font-semibold">Active Session</span>
+                            <span id="displayPatientID" class="text-slate-500 dark:text-slate-400 text-xs font-mono">ID: #P-1042</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">Hello, <span id="displayPatientName">Robert Chen</span> <span id="displayPatientAge" class="text-slate-500 dark:text-slate-400 text-base font-normal">(Age 78)</span></h2>
+                        <p class="text-slate-600 dark:text-slate-400 text-xs">Room: <span id="displayPatientRoom" class="text-slate-900 dark:text-slate-200 font-semibold">302</span> • Assigned Nurse: <span id="displayPatientNurse" class="text-slate-900 dark:text-slate-200 font-semibold">Sarah Jenkins, RN</span></p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2 bg-white dark:bg-slate-900/70 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700/50 text-xs shadow-sm">
+                    <i class="fa-solid fa-location-dot text-sky-500 animate-bounce text-lg"></i>
+                    <div>
+                        <div class="text-slate-400 dark:text-slate-400 text-[10px]">CURRENT TRACKED LOCATION</div>
+                        <div id="displayPatientLocation" class="font-bold text-slate-800 dark:text-slate-200">North Wing, Living Area</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- SOS Emergency Signal Button -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 text-center shadow-lg">
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">Assistance Signal</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-6">Press the button below to send a gentle notification to your caregiver.</p>
+
+                        <!-- GENTLE PANIC BUTTON -->
+                        <button id="sosBtn" onclick="triggerSOS('MANUAL_ASSIST', 'Patient requested immediate assistance.')" 
+                            class="sos-active w-56 h-56 mx-auto rounded-full bg-gradient-to-br from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white flex flex-col items-center justify-center shadow-2xl transition transform active:scale-95 border-4 border-sky-300/30">
+                            <i class="fa-solid fa-hand-sparkles text-6xl mb-2 drop-shadow"></i>
+                            <span class="text-3xl font-black tracking-wider drop-shadow">CALL HELP</span>
+                            <span class="text-[11px] font-semibold bg-sky-900/60 px-3 py-0.5 rounded-full mt-2 text-sky-200">PRESS TO NOTIFY</span>
+                        </button>
+
+                        <p id="sosStatusText" class="mt-6 text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/60 py-2 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                            Status: <span class="text-emerald-600 dark:text-emerald-400">Monitoring Active & Safe</span>
+                        </p>
+                    </div>
+
+                    <!-- Quick Preset Signals -->
+                    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 shadow-lg">
+                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3"><i class="fa-solid fa-hand-holding-medical text-sky-500 mr-2"></i>Quick Assistance Requests</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="triggerSOS('NEED_WATER', 'Patient requested drinking water.')" class="p-3 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-semibold flex flex-col items-center gap-2 border border-slate-200 dark:border-slate-600/40 transition">
+                                <i class="fa-solid fa-glass-water text-sky-500 text-xl"></i> Water Request
+                            </button>
+                            <button onclick="triggerSOS('NEED_MEDS', 'Patient requested assistance taking medication.')" class="p-3 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-semibold flex flex-col items-center gap-2 border border-slate-200 dark:border-slate-600/40 transition">
+                                <i class="fa-solid fa-pills text-purple-500 text-xl"></i> Medication Help
+                            </button>
+                            <button onclick="triggerSOS('FEELING_DIZZY', 'Patient reported feeling lightheaded.')" class="p-3 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-semibold flex flex-col items-center gap-2 border border-slate-200 dark:border-slate-600/40 transition">
+                                <i class="fa-solid fa-head-side-virus text-amber-500 text-xl"></i> Feeling Dizzy
+                            </button>
+                            <button onclick="triggerSOS('BATHROOM_ASSIST', 'Patient requested bathroom assistance.')" class="p-3 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-semibold flex flex-col items-center gap-2 border border-slate-200 dark:border-slate-600/40 transition">
+                                <i class="fa-solid fa-restroom text-emerald-500 text-xl"></i> Bathroom Aid
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Realtime Biometric Gauges & Wave Graph -->
+                <div class="lg:col-span-2 space-y-6">
+
+                    <!-- Vital Gauges Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md">
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Heart Rate</span>
+                                <i class="fa-solid fa-heart-pulse text-red-500 animate-pulse text-lg"></i>
+                            </div>
+                            <div class="mt-3 flex items-baseline gap-1">
+                                <span id="valHR" class="text-3xl font-black text-slate-900 dark:text-white">74</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">BPM</span>
+                            </div>
+                            <span id="badgeHR" class="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">Normal</span>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md">
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">SpO2 (Oxygen)</span>
+                                <i class="fa-solid fa-lungs text-sky-500 text-lg"></i>
+                            </div>
+                            <div class="mt-3 flex items-baseline gap-1">
+                                <span id="valSpO2" class="text-3xl font-black text-slate-900 dark:text-white">98</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">%</span>
+                            </div>
+                            <span id="badgeSpO2" class="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">Optimal</span>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md">
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Blood Pressure</span>
+                                <i class="fa-solid fa-wave-square text-indigo-500 text-lg"></i>
+                            </div>
+                            <div class="mt-3 flex items-baseline gap-1">
+                                <span id="valBP" class="text-2xl font-black text-slate-900 dark:text-white">122/81</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400">mmHg</span>
+                            </div>
+                            <span class="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">Normal</span>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md">
+                            <div class="flex justify-between items-start">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Body Temp</span>
+                                <i class="fa-solid fa-temperature-three-quarters text-amber-500 text-lg"></i>
+                            </div>
+                            <div class="mt-3 flex items-baseline gap-1">
+                                <span id="valTemp" class="text-3xl font-black text-slate-900 dark:text-white">36.7</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">°C</span>
+                            </div>
+                            <span class="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">Normal</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Live Chart -->
+                    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-5 border border-slate-200 dark:border-slate-700/80 shadow-lg">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-sky-500"></i> Dynamic Heart Rate Stream
+                            </h3>
+                            <span class="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-md font-semibold">Live Telemetry</span>
+                        </div>
+                        <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700/60">
+                            <svg id="pulseSvg" class="w-full h-32" viewBox="0 0 500 100" preserveAspectRatio="none">
+                                <path id="pulsePath" d="M 0 50 L 500 50" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Testing Simulator Controls -->
+                    <div class="bg-white dark:bg-slate-800/60 rounded-3xl p-5 border border-slate-200 dark:border-slate-700/50 shadow-md">
+                        <h4 class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-2"><i class="fa-solid fa-vial text-amber-500 mr-1.5"></i> Simulation Console</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="simulateCondition('HIGH_HR')" class="px-3 py-1.5 bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 dark:hover:bg-amber-500/30 border border-amber-500/40 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-semibold transition">
+                                Trigger High HR (138 BPM)
+                            </button>
+                            <button onclick="simulateCondition('LOW_SPO2')" class="px-3 py-1.5 bg-amber-500/10 dark:bg-amber-500/20 hover:bg-amber-500/20 dark:hover:bg-amber-500/30 border border-amber-500/40 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-semibold transition">
+                                Trigger Low SpO2 (86%)
+                            </button>
+                            <button onclick="resetVitals()" class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-300 rounded-xl text-xs font-semibold transition ml-auto">
+                                Reset Vitals
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- =================================================== -->
+        <!-- VIEW 2: CAREGIVER / NURSE CENTRAL MONITORING BOARD -->
+        <!-- =================================================== -->
+        <div id="viewCaregiver" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-between shadow-md">
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400 text-xs">Monitoring Patient</span>
+                        <div id="caregiverMonitoringName" class="text-lg font-bold text-slate-900 dark:text-white">Robert Chen</div>
+                    </div>
+                    <i class="fa-solid fa-user-nurse text-2xl text-sky-500"></i>
+                </div>
+                <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-between shadow-md">
+                    <div>
+                        <span class="text-slate-500 dark:text-slate-400 text-xs">Active Requests</span>
+                        <div id="caregiverActiveCount" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">0 Alerts</div>
+                    </div>
+                    <i class="fa-solid fa-bell text-2xl text-sky-500"></i>
+                </div>
+                
+                <!-- Restricted Emergency Hotline Controls (Nurse/Caregiver Access Only) -->
+                <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 flex items-center gap-2 shadow-md">
+                    <button onclick="callEmergency('911')" class="flex-1 py-2.5 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                        <i class="fa-solid fa-phone"></i> Call 911 / EMS
+                    </button>
+                    <button onclick="callEmergency('Family Doctor')" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold rounded-2xl text-xs transition flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-600 active:scale-95">
+                        <i class="fa-solid fa-user-doctor"></i> Call Doctor
+                    </button>
+                </div>
+
+                <!-- SWITCH / LOG IN USER BUTTON (NURSE DASHBOARD ACCESS ONLY) -->
+                <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 flex items-center shadow-md">
+                    <button onclick="openLoginModal()" class="w-full py-2.5 bg-sky-600/10 dark:bg-sky-500/20 hover:bg-sky-600/20 dark:hover:bg-sky-500/30 text-sky-700 dark:text-sky-300 font-bold rounded-2xl text-xs transition border border-sky-500/30 flex items-center justify-center gap-2 active:scale-95">
+                        <i class="fa-solid fa-arrow-right-to-bracket text-sky-600 dark:text-sky-400"></i>
+                        <span>Switch / Log In User</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-shield-heart text-sky-500"></i> Real-Time Incident Feed
+                    </h3>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Automated Caregiver Queue</span>
+                </div>
+
+                <div id="caregiverAlertFeed" class="space-y-3">
+                    <div class="p-6 text-center text-slate-500 dark:text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-2xl mb-2 block"></i>
+                        No active alerts right now. Patient is comfortable and safe.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =================================================== -->
+    <!-- MODAL 1: LOGIN / SWITCH USER DIALOG -->
+    <!-- =================================================== -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-6">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-xl border border-sky-500/30">
+                        <i class="fa-solid fa-user-gear text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Log In / Switch Account</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Select a registered elder profile or sign in.</p>
+                    </div>
+                </div>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Pre-registered Elder Profiles -->
+            <div>
+                <label class="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider block mb-3">Select Elder Patient Account:</label>
+                <div class="grid grid-cols-1 gap-3" id="userProfileList">
+                    <!-- Dynamic rendering via JS -->
+                </div>
+            </div>
+
+            <!-- Custom User Login Form -->
+            <div class="border-t border-slate-200 dark:border-slate-800 pt-4">
+                <span class="text-xs text-slate-500 dark:text-slate-400 block mb-2">Or enter manual Access Key / ID:</span>
+                <div class="flex gap-2">
+                    <input type="text" id="inputAccessID" placeholder="e.g. #P-1099" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 flex-1">
+                    <button onclick="loginManualID()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl transition">
+                        Log In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SOS ALERT SENT CONFIRMATION -->
+    <div id="alertModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border-2 border-sky-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4">
+            <div class="w-16 h-16 bg-sky-500/20 text-sky-500 dark:text-sky-400 border border-sky-500/40 rounded-full flex items-center justify-center mx-auto text-3xl">
+                <i class="fa-solid fa-heart"></i>
+            </div>
+            <h3 id="modalTitle" class="text-xl font-black text-slate-900 dark:text-white">SIGNAL SENT</h3>
+            <p id="modalDesc" class="text-xs text-slate-600 dark:text-slate-300">Your caregiver has been gently notified. Please stay relaxed.</p>
+            
+            <div class="bg-slate-100 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-left text-xs space-y-1 text-slate-700 dark:text-slate-300">
+                <div><strong>Patient:</strong> <span id="modalPatient">Robert Chen</span></div>
+                <div><strong>Location:</strong> <span id="modalLocation">North Wing</span></div>
+                <div><strong>Time Sent:</strong> <span id="modalTime">--:--</span></div>
+            </div>
+
+            <button onclick="closeAlertModal()" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl transition">
+                Understood
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: ACTIVE EMERGENCY CALLING SCREEN -->
+    <div id="activeCallModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border-2 border-rose-500/50 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
+            
+            <div class="relative w-24 h-24 mx-auto flex items-center justify-center">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-40"></span>
+                <div id="callHeaderIconBg" class="relative w-24 h-24 bg-rose-600/30 border-2 border-rose-500 rounded-full flex items-center justify-center text-4xl text-rose-500 dark:text-rose-400 shadow-xl">
+                    <i id="callHeaderIcon" class="fa-solid fa-phone-volume animate-bounce"></i>
+                </div>
+            </div>
+
+            <div>
+                <span id="callStatusBadge" class="px-3 py-1 bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/30 text-[10px] font-bold tracking-widest uppercase rounded-full inline-block mb-2">
+                    Emergency Outgoing Line
+                </span>
+                <h3 id="activeCallTitle" class="text-2xl font-black text-slate-900 dark:text-white">Calling 911 Dispatch</h3>
+                <p id="activeCallSubtitle" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Connecting telemetry data & position info...</p>
+            </div>
+
+            <div class="bg-slate-100 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/70 text-xs space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-500 dark:text-slate-400">Connected Line:</span>
+                    <span id="activeCallNumber" class="font-mono font-bold text-sky-600 dark:text-sky-400">911 (EMS Dispatch)</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-500 dark:text-slate-400">Call Duration:</span>
+                    <span id="activeCallTimer" class="font-mono font-bold text-emerald-600 dark:text-emerald-400">00:01</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-500 dark:text-slate-400">Caller Patient:</span>
+                    <span id="activeCallPatient" class="font-semibold text-slate-800 dark:text-slate-200">Maria Hannah (Room 302)</span>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button onclick="endEmergencyCall()" class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm rounded-2xl shadow-xl transition flex items-center justify-center gap-2 border border-rose-400/30 active:scale-95">
+                    <i class="fa-solid fa-phone-slash"></i> End Emergency Call
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: CAREBAND INTERACTIVE SMART WATCH DIALOG -->
+    <div id="watchModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative">
+            <button onclick="closeWatchModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 dark:hover:text-white p-2 z-10">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center space-y-5">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-sky-500/10 border border-sky-500/30 rounded-full text-xs text-sky-600 dark:text-sky-400 font-semibold">
+                    <i class="fa-solid fa-microchip"></i> Hardware Telemetry
+                </div>
+                
+                <!-- Realistic Smart Watch Render -->
+                <div class="relative w-56 h-64 mx-auto flex items-center justify-center my-4">
+                    <!-- Watch Top Strap -->
+                    <div class="absolute -top-6 w-24 h-12 bg-slate-800 rounded-t-2xl border-x-2 border-t-2 border-slate-700"></div>
+                    <!-- Watch Bottom Strap -->
+                    <div class="absolute -bottom-6 w-24 h-12 bg-slate-800 rounded-b-2xl border-x-2 border-b-2 border-slate-700"></div>
+                    
+                    <!-- Watch Body Case -->
+                    <div class="relative w-52 h-60 bg-slate-950 rounded-[42px] p-3 shadow-2xl border-4 border-slate-700 flex flex-col justify-between overflow-hidden">
+                        <!-- Crown Button -->
+                        <div class="absolute right-[-14px] top-1/2 -translate-y-1/2 w-3 h-10 bg-slate-600 rounded-r-md border border-slate-500"></div>
+
+                        <!-- Smart Watch Screen -->
+                        <div class="w-full h-full bg-slate-900 rounded-[32px] p-3 border border-slate-800/80 flex flex-col justify-between text-left text-white relative">
+                            <!-- Screen Top Bar -->
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                                <span><i class="fa-solid fa-clock text-sky-400 mr-1"></i>10:42 AM</span>
+                                <span class="text-emerald-400"><i class="fa-solid fa-battery-full mr-1"></i><span id="watchBatteryText">88%</span></span>
+                            </div>
+
+                            <!-- Screen Middle Content -->
+                            <div class="space-y-2 my-auto text-center">
+                                <div class="relative inline-block">
+                                    <i class="fa-solid fa-heart-pulse text-rose-500 text-3xl animate-pulse"></i>
+                                    <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                      <span class="watch-sensor-glow absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                      <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                    </span>
+                                </div>
+                                <div>
+                                    <div id="watchHRText" class="text-3xl font-black tracking-tight text-white font-mono">74</div>
+                                    <div class="text-[9px] text-slate-400 font-medium uppercase tracking-wider">Heart Rate (BPM)</div>
+                                </div>
+                            </div>
+
+                            <!-- Screen Bottom Status -->
+                            <div class="bg-slate-800/80 p-1.5 rounded-xl border border-slate-700/60 text-[9px] flex justify-between items-center font-mono">
+                                <span class="text-slate-400">SpO2: <strong id="watchSpO2Text" class="text-sky-400">98%</strong></span>
+                                <span class="text-emerald-400 font-bold">CONNECTED</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Device Info Footer -->
+                <div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl text-xs space-y-1 text-left text-slate-600 dark:text-slate-300">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Model:</span>
+                        <strong class="font-mono text-slate-800 dark:text-slate-200">CareBand v4.2 Pro</strong>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Firmware:</span>
+                        <strong class="font-mono text-slate-800 dark:text-slate-200">v2.10.8-Live</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pre-defined Elder User Database
+        const PATIENT_DATABASE = [
+            {
+                id: "P-1042",
+                name: "Maria Hannah",
+                age: 67,
+                room: "302",
+                nurse: "Sarah Batobato, RN",
+                doctor: { name: "Dr. Evelyn Vance (Primary Care)", phone: "+1 (800) 555-0199" },
+                location: "North Wing, Living Area",
+                avatar: "https://deprescribing.org/wp-content/uploads/2015/11/elderly-woman-smiling.jpg",
+                vitals: { hr: 74, bpSys: 122, bpDia: 81, spO2: 98, temp: 36.7, battery: 88 }
+            },
+            {
+                id: "P-2081",
+                name: "Maria Santos",
+                age: 82,
+                room: "108",
+                nurse: "David Di kulang, RN",
+                doctor: { name: "Dr. Marcus Reed (Cardiology)", phone: "+1 (800) 555-0144" },
+                location: "East Wing, Garden Patio",
+                avatar: "https://www.latrobe.edu.au/aipca/australian-centre-for-evidence-based-aged-care/images/woman-smiling.jpg/460.jpg",
+                vitals: { hr: 68, bpSys: 118, bpDia: 76, spO2: 99, temp: 36.5, battery: 45 }
+            },
+            {
+                id: "P-3105",
+                name: "Uncle David Lee",
+                age: 75,
+                room: "215",
+                nurse: "Jen Mo, RN",
+                doctor: { name: "Dr. Aris Thorne (Geriatrics)", phone: "+1 (800) 555-0177" },
+                location: "West Wing, Bedroom 215",
+                avatar: "https://tse1.mm.bing.net/th/id/OIP.dldhQJFMoPngpfMtuH-C0AHaFj?r=0&rs=1&pid=ImgDetMain&o=7&rm=3",
+                vitals: { hr: 81, bpSys: 130, bpDia: 85, spO2: 96, temp: 36.8, battery: 18 }
+            }
+        ];
+
+        let activePatient = PATIENT_DATABASE[0];
+        let activeAlerts = [];
+        let chartData = Array(30).fill(50);
+        let audioCtx = null;
+        let callTimerInterval = null;
+        let callSeconds = 0;
+
+        // Dark / Light Theme Toggle Function
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('themeIcon');
+            const text = document.getElementById('themeText');
+
+            if (isDark) {
+                icon.className = "fa-solid fa-sun text-amber-400";
+                text.innerText = "Light Mode";
+            } else {
+                icon.className = "fa-solid fa-moon text-indigo-500";
+                text.innerText = "Dark Mode";
+            }
+        }
+
+        // CareBand Watch Display Modal Controls
+        function openWatchModal() {
+            document.getElementById('watchHRText').innerText = activePatient.vitals.hr;
+            document.getElementById('watchSpO2Text').innerText = `${activePatient.vitals.spO2}%`;
+            document.getElementById('watchBatteryText').innerText = `${activePatient.vitals.battery}%`;
+            document.getElementById('watchModal').classList.remove('hidden');
+        }
+
+        function closeWatchModal() {
+            document.getElementById('watchModal').classList.add('hidden');
+        }
+
+        function renderUserLoginList() {
+            const listContainer = document.getElementById('userProfileList');
+            listContainer.innerHTML = PATIENT_DATABASE.map(p => `
+                <div onclick="selectUser('${p.id}')" class="p-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700/80 rounded-2xl border ${p.id === activePatient.id ? 'border-sky-500' : 'border-slate-300 dark:border-slate-700'} flex items-center justify-between cursor-pointer transition">
+                    <div class="flex items-center gap-3">
+                        <img src="${p.avatar}" class="w-12 h-12 rounded-xl object-cover border border-slate-300 dark:border-slate-600">
+                        <div>
+                            <div class="font-bold text-slate-900 dark:text-white text-sm">${p.name} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">(Age ${p.age})</span></div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">Room ${p.room} • Doctor: ${p.doctor.name}</div>
+                        </div>
+                    </div>
+                    ${p.id === activePatient.id 
+                        ? `<span class="px-2.5 py-1 bg-sky-500/20 text-sky-600 dark:text-sky-400 border border-sky-500/30 text-[10px] font-bold rounded-lg">Logged In</span>` 
+                        : `<button class="px-3 py-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-sky-600 hover:text-white text-slate-800 dark:text-white text-xs font-semibold rounded-lg transition">Select</button>`
+                    }
+                </div>
+            `).join('');
+        }
+
+        function openLoginModal() {
+            renderUserLoginList();
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+        }
+
+        function selectUser(patientID) {
+            const patient = PATIENT_DATABASE.find(p => p.id === patientID);
+            if (patient) {
+                activePatient = patient;
+                loadPatientData();
+                closeLoginModal();
+                speakAlert(`Welcome back, ${patient.name}. Account connected.`);
+            }
+        }
+
+        function loginManualID() {
+            const idInput = document.getElementById('inputAccessID').value.trim();
+            if (!idInput) return;
+
+            const found = PATIENT_DATABASE.find(p => p.id.toLowerCase() === idInput.toLowerCase());
+            if (found) {
+                selectUser(found.id);
+            } else {
+                alert(`ID ${idInput} not found in system directory. Resetting to main account.`);
+            }
+        }
+
+        function loadPatientData() {
+            document.getElementById('displayPatientName').innerText = activePatient.name;
+            document.getElementById('displayPatientAge').innerText = `(Age ${activePatient.age})`;
+            document.getElementById('displayPatientRoom').innerText = activePatient.room;
+            document.getElementById('displayPatientNurse').innerText = activePatient.nurse;
+            document.getElementById('displayPatientLocation').innerText = activePatient.location;
+            document.getElementById('displayPatientID').innerText = `ID: #${activePatient.id}`;
+            document.getElementById('patientAvatar').src = activePatient.avatar;
+            document.getElementById('caregiverMonitoringName').innerText = activePatient.name;
+
+            updateVitalsDisplay();
+        }
+
+        function switchTab(tab) {
+            const patientView = document.getElementById('viewPatient');
+            const caregiverView = document.getElementById('viewCaregiver');
+            const btnPatient = document.getElementById('tabPatient');
+            const btnCaregiver = document.getElementById('tabCaregiver');
+
+            if (tab === 'patient') {
+                patientView.classList.remove('hidden');
+                caregiverView.classList.add('hidden');
+                btnPatient.className = "px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white shadow-md transition";
+                btnCaregiver.className = "px-4 py-2 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition";
+            } else {
+                patientView.classList.add('hidden');
+                caregiverView.classList.remove('hidden');
+                btnCaregiver.className = "px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white shadow-md transition";
+                btnPatient.className = "px-4 py-2 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition";
+            }
+        }
+
+        function playGentleChime() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.2);
+            } catch (e) {
+                console.log("Audio deferred");
+            }
+        }
+
+        function speakAlert(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                utterance.pitch = 1.2;
+                utterance.rate = 0.85;
+                utterance.volume = 0.5;
+
+                const voices = window.speechSynthesis.getVoices();
+                const gentleVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')));
+                if (gentleVoice) utterance.voice = gentleVoice;
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function triggerSOS(type, desc) {
+            playGentleChime();
+            const timestamp = new Date().toLocaleTimeString();
+            const alertItem = { 
+                id: Date.now(), 
+                patientName: activePatient.name, 
+                room: activePatient.room,
+                type, 
+                desc, 
+                time: timestamp, 
+                acknowledged: false 
+            };
+            
+            activeAlerts.unshift(alertItem);
+            updateCaregiverFeed();
+
+            document.getElementById('modalTitle').innerText = type.replace(/_/g, ' ');
+            document.getElementById('modalDesc').innerText = desc;
+            document.getElementById('modalPatient').innerText = `${activePatient.name} (Room ${activePatient.room})`;
+            document.getElementById('modalLocation').innerText = activePatient.location;
+            document.getElementById('modalTime').innerText = timestamp;
+            
+            if (!type.includes('CALL')) {
+                speakAlert("Don't worry. Your caregiver has been notified.");
+                document.getElementById('alertModal').classList.remove('hidden');
+            }
+
+            document.getElementById('sosStatusText').innerHTML = `Status: <span class="text-sky-600 dark:text-sky-400">Signal Sent at ${timestamp}</span>`;
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').classList.add('hidden');
+        }
+
+        function callEmergency(target) {
+            playGentleChime();
+            const modal = document.getElementById('activeCallModal');
+            const title = document.getElementById('activeCallTitle');
+            const number = document.getElementById('activeCallNumber');
+            const patient = document.getElementById('activeCallPatient');
+            const iconBg = document.getElementById('callHeaderIconBg');
+            const icon = document.getElementById('callHeaderIcon');
+            const badge = document.getElementById('callStatusBadge');
+
+            patient.innerText = `${activePatient.name} (Room ${activePatient.room})`;
+            callSeconds = 0;
+            document.getElementById('activeCallTimer').innerText = "00:00";
+
+            if (target === '911') {
+                title.innerText = "Calling 911 EMS Dispatch";
+                number.innerText = "911 (Emergency Services)";
+                badge.innerText = "CRITICAL EMS OUTGOING CALL";
+                badge.className = "px-3 py-1 bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-500/30 text-[10px] font-bold tracking-widest uppercase rounded-full inline-block mb-2";
+                iconBg.className = "relative w-24 h-24 bg-rose-600/30 border-2 border-rose-500 rounded-full flex items-center justify-center text-4xl text-rose-500 dark:text-rose-400 shadow-xl";
+                icon.className = "fa-solid fa-truck-medical animate-bounce";
+                
+                speakAlert("Initiating emergency 9 1 1 call. Connecting dispatch now.");
+                triggerSOS('EMS_911_CALL', `Emergency call placed to 911 dispatch by caregiver for ${activePatient.name}.`);
+            } else {
+                title.innerText = `Calling ${activePatient.doctor.name}`;
+                number.innerText = activePatient.doctor.phone;
+                badge.innerText = "TELEHEALTH DOCTOR CALL";
+                badge.className = "px-3 py-1 bg-sky-500/20 text-sky-600 dark:text-sky-300 border border-sky-500/30 text-[10px] font-bold tracking-widest uppercase rounded-full inline-block mb-2";
+                iconBg.className = "relative w-24 h-24 bg-sky-600/30 border-2 border-sky-500 rounded-full flex items-center justify-center text-4xl text-sky-500 dark:text-sky-400 shadow-xl";
+                icon.className = "fa-solid fa-user-doctor animate-bounce";
+                
+                speakAlert(`Connecting doctor hotline for ${activePatient.doctor.name}.`);
+                triggerSOS('DOCTOR_CALL', `Direct caregiver call placed to ${activePatient.doctor.name}.`);
+            }
+
+            modal.classList.remove('hidden');
+
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            callTimerInterval = setInterval(() => {
+                callSeconds++;
+                const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+                const secs = String(callSeconds % 60).padStart(2, '0');
+                document.getElementById('activeCallTimer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function endEmergencyCall() {
+            if (callTimerInterval) clearInterval(callTimerInterval);
+            document.getElementById('activeCallModal').classList.add('hidden');
+            speakAlert("Call ended.");
+        }
+
+        function updateCaregiverFeed() {
+            const feed = document.getElementById('caregiverAlertFeed');
+            const countLabel = document.getElementById('caregiverActiveCount');
+            
+            const activeUnack = activeAlerts.filter(a => !a.acknowledged).length;
+            countLabel.innerText = `${activeUnack} Active Alert${activeUnack !== 1 ? 's' : ''}`;
+
+            if (activeAlerts.length === 0) {
+                feed.innerHTML = `
+                    <div class="p-6 text-center text-slate-500 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 text-sm">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-2xl mb-2 block"></i>
+                        No active alerts right now. Patient is comfortable and safe.
+                    </div>`;
+                return;
+            }
+
+            feed.innerHTML = activeAlerts.map(alert => `
+                <div class="p-4 rounded-2xl border ${alert.acknowledged ? 'bg-slate-100 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60' : 'bg-sky-50 dark:bg-sky-950/40 border-sky-300 dark:border-sky-500/40'} flex flex-wrap justify-between items-center gap-4 transition">
+                    <div class="flex items-start gap-3">
+                        <div class="p-2 bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-xl mt-0.5">
+                            <i class="fa-solid fa-bell text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-sm text-slate-900 dark:text-white">${alert.patientName} (${alert.type})</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">${alert.time}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">${alert.desc}</p>
+                        </div>
+                    </div>
+                    <div>
+                        ${alert.acknowledged 
+                            ? `<span class="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-bold rounded-xl">Acknowledged</span>` 
+                            : `<button onclick="ackAlert(${alert.id})" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-lg transition">Acknowledge Alert</button>`
+                        }
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function ackAlert(id) {
+            const item = activeAlerts.find(a => a.id === id);
+            if (item) item.acknowledged = true;
+            updateCaregiverFeed();
+        }
+
+        function simulateCondition(cond) {
+            if (cond === 'HIGH_HR') {
+                activePatient.vitals.hr = 138;
+                triggerSOS('AUTOMATIC_HR_ALARM', 'Elevated Heart Rate detected (138 BPM).');
+            } else if (cond === 'LOW_SPO2') {
+                activePatient.vitals.spO2 = 86;
+                triggerSOS('AUTOMATIC_SPO2_ALARM', 'Blood Oxygen drop detected (86% SpO2).');
+            }
+            updateVitalsDisplay();
+        }
+
+        function resetVitals() {
+            activePatient.vitals.hr = 74;
+            activePatient.vitals.spO2 = 98;
+            activePatient.vitals.battery = 88;
+            document.getElementById('sosStatusText').innerHTML = `Status: <span class="text-emerald-600 dark:text-emerald-400">Monitoring Active & Safe</span>`;
+            updateVitalsDisplay();
+        }
+
+        function updateVitalsDisplay() {
+            document.getElementById('valHR').innerText = activePatient.vitals.hr;
+            document.getElementById('valSpO2').innerText = activePatient.vitals.spO2;
+            
+            // Sync interactive watch view values if open
+            const watchHR = document.getElementById('watchHRText');
+            if (watchHR) watchHR.innerText = activePatient.vitals.hr;
+
+            updateBatteryDisplay();
+        }
+
+        function updateBatteryDisplay() {
+            const battValElem = document.getElementById('carebandBatteryVal');
+            const battIconElem = document.getElementById('carebandBatteryIcon');
+            const battContainer = document.getElementById('carebandBatteryContainer');
+            const battery = activePatient.vitals.battery ?? 100;
+
+            battValElem.innerText = `${battery}%`;
+
+            if (battery > 50) {
+                battContainer.className = "flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold font-mono";
+                battIconElem.className = "fa-solid fa-battery-full text-sm";
+            } else if (battery > 20) {
+                battContainer.className = "flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-bold font-mono";
+                battIconElem.className = "fa-solid fa-battery-half text-sm";
+            } else {
+                battContainer.className = "flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-bold font-mono animate-pulse";
+                battIconElem.className = "fa-solid fa-battery-quarter text-sm";
+            }
+        }
+
+        function updatePulseGraph() {
+            chartData.shift();
+            const variance = Math.random() * 20 - 10;
+            const mappedY = 100 - Math.min(Math.max((activePatient.vitals.hr + variance) * 0.6, 10), 90);
+            chartData.push(mappedY);
+
+            const pathPoints = chartData.map((y, index) => {
+                const x = (index / (chartData.length - 1)) * 500;
+                return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+            }).join(' ');
+
+            document.getElementById('pulsePath').setAttribute('d', pathPoints);
+        }
+
+        // Initialize App
+        loadPatientData();
+
+        setInterval(() => {
+            if (activePatient.vitals.hr >= 65 && activePatient.vitals.hr <= 80) {
+                activePatient.vitals.hr = 70 + Math.floor(Math.random() * 8);
+                updateVitalsDisplay();
+            }
+            updatePulseGraph();
+        }, 1200);
+    </script>
+</body>
+</html>
