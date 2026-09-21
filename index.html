@@ -29,6 +29,12 @@
         .watch-sensor-glow {
             animation: watch-pulse 1.5s infinite;
         }
+        .highlight-tutorial {
+            outline: 4px solid #0284c7 !important;
+            outline-offset: 4px;
+            transform: scale(1.02);
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 font-sans min-h-screen text-slate-800 dark:text-slate-100 pb-12 transition-colors duration-300">
@@ -57,8 +63,14 @@
                 </button>
             </div>
 
-            <!-- Theme Toggle & Telemetry Badge Controls -->
-            <div class="flex items-center gap-3">
+            <!-- Controls: Tutorial Button, Theme Toggle & Telemetry Badge Controls -->
+            <div class="flex items-center gap-2 md:gap-3">
+                <!-- COMPACT VOICE TUTORIAL BUTTON (SENIOR ASSIST) -->
+                <button id="navTutorialBtn" onclick="toggleVoiceTutorial()" class="flex items-center gap-2 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/80 px-3 py-1.5 rounded-xl border border-sky-300 dark:border-sky-700/60 text-xs text-sky-700 dark:text-sky-300 font-bold transition shadow-sm active:scale-95">
+                    <i id="navTutorialIcon" class="fa-solid fa-volume-high text-sky-600 dark:text-sky-400 animate-pulse"></i>
+                    <span id="navTutorialLabel">Voice Guide</span>
+                </button>
+
                 <!-- LIGHT / DARK MODE TOGGLE BUTTON -->
                 <button onclick="toggleTheme()" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-700/70 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-xs text-slate-700 dark:text-sky-300 font-semibold transition shadow-sm">
                     <i id="themeIcon" class="fa-solid fa-moon text-indigo-500 dark:text-amber-400"></i>
@@ -66,7 +78,7 @@
                 </button>
                 
                 <!-- CLICKABLE CareBand Telemetry & Battery Badge Button -->
-                <button onclick="openWatchModal()" class="flex items-center gap-3 bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-950 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 text-xs shadow-inner cursor-pointer transition active:scale-95 group">
+                <button id="carebandLiveBadge" onclick="openWatchModal()" class="flex items-center gap-3 bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-950 px-3.5 py-1.5 rounded-full border border-slate-300 dark:border-slate-700 text-xs shadow-inner cursor-pointer transition active:scale-95 group">
                     <div class="flex items-center gap-2 border-r border-slate-300 dark:border-slate-700/80 pr-3">
                         <span class="relative flex h-2.5 w-2.5">
                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -84,6 +96,29 @@
             </div>
         </div>
     </nav>
+
+    <!-- DYNAMIC FLOATING VOICE TUTORIAL BANNER (Appears dynamically only during active steps) -->
+    <div id="tutorialBanner" class="fixed bottom-6 left-1/2 -translate-x-1/2 max-w-xl w-[92%] bg-gradient-to-r from-sky-600 to-blue-700 text-white rounded-2xl p-4 shadow-2xl border-2 border-sky-300/40 z-50 hidden transition-all duration-300">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl flex-shrink-0 border border-white/30 shadow-inner">
+                    <i class="fa-solid fa-volume-high animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">Voice Guide Active</span>
+                        <span id="tutorialStepIndicator" class="text-[10px] font-semibold text-sky-100">Step 1 of 3</span>
+                    </div>
+                    <p id="tutorialTextDisplay" class="text-xs md:text-sm font-bold mt-0.5 leading-snug drop-shadow">
+                        Loading tutorial...
+                    </p>
+                </div>
+            </div>
+            <button onclick="stopVoiceTutorial()" title="Stop tutorial" class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-xl transition flex-shrink-0 active:scale-95">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+    </div>
 
     <div class="max-w-7xl mx-auto p-4 md:p-6">
 
@@ -119,7 +154,7 @@
 
                 <!-- SOS Emergency Signal Button -->
                 <div class="lg:col-span-1 space-y-6">
-                    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 text-center shadow-lg">
+                    <div id="sosCardBox" class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 text-center shadow-lg transition-all">
                         <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">Assistance Signal</h3>
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-6">Press the button below to send a gentle notification to your caregiver.</p>
 
@@ -137,7 +172,7 @@
                     </div>
 
                     <!-- Quick Preset Signals -->
-                    <div class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 shadow-lg">
+                    <div id="quickRequestsBox" class="bg-white dark:bg-slate-800/90 rounded-3xl p-6 border border-slate-200 dark:border-slate-700/80 shadow-lg transition-all">
                         <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3"><i class="fa-solid fa-hand-holding-medical text-sky-500 mr-2"></i>Quick Assistance Requests</h4>
                         <div class="grid grid-cols-2 gap-3">
                             <button onclick="triggerSOS('NEED_WATER', 'Patient requested drinking water.')" class="p-3 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-semibold flex flex-col items-center gap-2 border border-slate-200 dark:border-slate-600/40 transition">
@@ -160,7 +195,7 @@
                 <div class="lg:col-span-2 space-y-6">
 
                     <!-- Vital Gauges Grid -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div id="vitalsBox" class="grid grid-cols-2 md:grid-cols-4 gap-4 transition-all">
                         <div class="bg-white dark:bg-slate-800/90 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80 shadow-md">
                             <div class="flex justify-between items-start">
                                 <span class="text-xs text-slate-500 dark:text-slate-400 font-semibold">Heart Rate</span>
@@ -387,7 +422,7 @@
             <div class="bg-slate-100 dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/70 text-xs space-y-2">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-500 dark:text-slate-400">Connected Line:</span>
-                    <span id="activeCallNumber" class="font-mono font-bold text-sky-600 dark:text-sky-400">911 (EMS Dispatch)</span>
+                    <span id="activeCallNumber" class="font-mono font-bold text-sky-600 dark:text-sky-400">911 (Emergency Services)</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-slate-500 dark:text-slate-400">Call Duration:</span>
@@ -414,25 +449,34 @@
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
 
-            <div class="text-center space-y-5">
+            <div class="text-center space-y-4">
                 <div class="inline-flex items-center gap-2 px-3 py-1 bg-sky-500/10 border border-sky-500/30 rounded-full text-xs text-sky-600 dark:text-sky-400 font-semibold">
                     <i class="fa-solid fa-microchip"></i> Hardware Telemetry
                 </div>
                 
-                <!-- Realistic Smart Watch Render -->
-                <div class="relative w-56 h-64 mx-auto flex items-center justify-center my-4">
+                <!-- Realistic Smart Watch Render with Physical SOS Side Button -->
+                <div class="relative w-64 h-64 mx-auto flex items-center justify-center my-2">
                     <!-- Watch Top Strap -->
                     <div class="absolute -top-6 w-24 h-12 bg-slate-800 rounded-t-2xl border-x-2 border-t-2 border-slate-700"></div>
                     <!-- Watch Bottom Strap -->
                     <div class="absolute -bottom-6 w-24 h-12 bg-slate-800 rounded-b-2xl border-x-2 border-b-2 border-slate-700"></div>
                     
                     <!-- Watch Body Case -->
-                    <div class="relative w-52 h-60 bg-slate-950 rounded-[42px] p-3 shadow-2xl border-4 border-slate-700 flex flex-col justify-between overflow-hidden">
+                    <div class="relative w-52 h-60 bg-slate-950 rounded-[42px] p-3 shadow-2xl border-4 border-slate-700 flex flex-col justify-between">
+                        
+                        <!-- PHYSICAL HARDWARE SOS BUTTON -->
+                        <button onclick="triggerSOS('PHYSICAL_WATCH_BUTTON', 'Patient pressed the physical CareBand emergency side button.')" 
+                                title="Press physical SOS side button" 
+                                class="absolute -right-5 top-1/2 -translate-y-1/2 w-6 h-16 bg-gradient-to-r from-red-600 to-rose-500 hover:from-red-500 hover:to-rose-400 active:scale-90 text-white rounded-r-xl border-2 border-rose-400/80 shadow-lg flex flex-col items-center justify-center gap-1 cursor-pointer transition group z-20">
+                            <i class="fa-solid fa-bell text-xs animate-bounce"></i>
+                            <span class="text-[7px] font-black tracking-tighter leading-tight uppercase -rotate-90">SOS</span>
+                        </button>
+
                         <!-- Crown Button -->
-                        <div class="absolute right-[-14px] top-1/2 -translate-y-1/2 w-3 h-10 bg-slate-600 rounded-r-md border border-slate-500"></div>
+                        <div class="absolute -left-3 top-1/3 w-3 h-8 bg-slate-600 rounded-l-md border border-slate-500"></div>
 
                         <!-- Smart Watch Screen -->
-                        <div class="w-full h-full bg-slate-900 rounded-[32px] p-3 border border-slate-800/80 flex flex-col justify-between text-left text-white relative">
+                        <div class="w-full h-full bg-slate-900 rounded-[32px] p-3 border border-slate-800/80 flex flex-col justify-between text-left text-white relative overflow-hidden">
                             <!-- Screen Top Bar -->
                             <div class="flex justify-between items-center text-[10px] text-slate-400 font-mono">
                                 <span><i class="fa-solid fa-clock text-sky-400 mr-1"></i>10:42 AM</span>
@@ -440,7 +484,7 @@
                             </div>
 
                             <!-- Screen Middle Content -->
-                            <div class="space-y-2 my-auto text-center">
+                            <div class="space-y-1 my-auto text-center">
                                 <div class="relative inline-block">
                                     <i class="fa-solid fa-heart-pulse text-rose-500 text-3xl animate-pulse"></i>
                                     <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
@@ -522,6 +566,115 @@
         let audioCtx = null;
         let callTimerInterval = null;
         let callSeconds = 0;
+
+        // Interactive Audio & Visual Tutorial State
+        let tutorialRunning = false;
+        let currentTutorialStep = 0;
+        let tutorialTimeout = null;
+
+        const TUTORIAL_STEPS = [
+            {
+                text: "Step 1: Need immediate help? Press the big blue button that says CALL HELP.",
+                audio: "Welcome. Step 1: If you need emergency help, press the big blue button that says CALL HELP.",
+                elementId: "sosCardBox"
+            },
+            {
+                text: "Step 2: For specific needs, tap these quick buttons for Water, Pills, Dizzy, or Bathroom.",
+                audio: "Step 2: Below the call help button, you can tap these quick buttons to ask for water, medication, or bathroom aid.",
+                elementId: "quickRequestsBox"
+            },
+            {
+                text: "Step 3: Tap CareBand Live at the top to view your watch, or press the red side button on your band.",
+                audio: "Step 3: You can tap CareBand Live at the top to view your smart watch telemetry, or press the red physical side button on your wearable band anytime.",
+                elementId: "carebandLiveBadge"
+            }
+        ];
+
+        function toggleVoiceTutorial() {
+            if (tutorialRunning) {
+                stopVoiceTutorial();
+            } else {
+                startVoiceTutorial();
+            }
+        }
+
+        function startVoiceTutorial() {
+            tutorialRunning = true;
+            currentTutorialStep = 0;
+            
+            // Show dynamic floating tutorial bar
+            document.getElementById('tutorialBanner').classList.remove('hidden');
+            document.getElementById('navTutorialIcon').className = "fa-solid fa-square text-rose-500 animate-pulse";
+            document.getElementById('navTutorialLabel').innerText = "Stop Guide";
+            
+            playNextTutorialStep();
+        }
+
+        function stopVoiceTutorial() {
+            tutorialRunning = false;
+            clearTimeout(tutorialTimeout);
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            
+            // Hide floating tutorial bar and remove highlights
+            document.getElementById('tutorialBanner').classList.add('hidden');
+            
+            TUTORIAL_STEPS.forEach(step => {
+                const el = document.getElementById(step.elementId);
+                if (el) el.classList.remove('highlight-tutorial');
+            });
+
+            document.getElementById('navTutorialIcon').className = "fa-solid fa-volume-high text-sky-600 dark:text-sky-400 animate-pulse";
+            document.getElementById('navTutorialLabel').innerText = "Voice Guide";
+        }
+
+        function playNextTutorialStep() {
+            if (!tutorialRunning || currentTutorialStep >= TUTORIAL_STEPS.length) {
+                stopVoiceTutorial();
+                speakAlert("Tutorial completed. Stay safe!");
+                return;
+            }
+
+            const step = TUTORIAL_STEPS[currentTutorialStep];
+
+            // Update floating text and step counter
+            document.getElementById('tutorialStepIndicator').innerText = `Step ${currentTutorialStep + 1} of ${TUTORIAL_STEPS.length}`;
+            document.getElementById('tutorialTextDisplay').innerText = step.text;
+
+            // Highlight target section visually
+            TUTORIAL_STEPS.forEach(s => {
+                const el = document.getElementById(s.elementId);
+                if (el) el.classList.remove('highlight-tutorial');
+            });
+            const activeEl = document.getElementById(step.elementId);
+            if (activeEl) {
+                activeEl.classList.add('highlight-tutorial');
+                activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // Voice audio synthesis
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(step.audio);
+                utterance.pitch = 1.1;
+                utterance.rate = 0.82; // Calm, clear speed for seniors
+
+                const voices = window.speechSynthesis.getVoices();
+                const gentleVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')));
+                if (gentleVoice) utterance.voice = gentleVoice;
+
+                utterance.onend = () => {
+                    if (tutorialRunning) {
+                        currentTutorialStep++;
+                        tutorialTimeout = setTimeout(playNextTutorialStep, 1000);
+                    }
+                };
+
+                window.speechSynthesis.speak(utterance);
+            } else {
+                currentTutorialStep++;
+                tutorialTimeout = setTimeout(playNextTutorialStep, 5000);
+            }
+        }
 
         // Dark / Light Theme Toggle Function
         function toggleTheme() {
@@ -625,6 +778,7 @@
                 btnPatient.className = "px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white shadow-md transition";
                 btnCaregiver.className = "px-4 py-2 text-xs font-bold rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition";
             } else {
+                stopVoiceTutorial();
                 patientView.classList.add('hidden');
                 caregiverView.classList.remove('hidden');
                 btnCaregiver.className = "px-4 py-2 text-xs font-bold rounded-lg bg-sky-600 text-white shadow-md transition";
@@ -655,7 +809,7 @@
         }
 
         function speakAlert(text) {
-            if ('speechSynthesis' in window) {
+            if ('speechSynthesis' in window && !tutorialRunning) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 
@@ -672,6 +826,7 @@
         }
 
         function triggerSOS(type, desc) {
+            stopVoiceTutorial();
             playGentleChime();
             const timestamp = new Date().toLocaleTimeString();
             const alertItem = { 
@@ -706,6 +861,7 @@
         }
 
         function callEmergency(target) {
+            stopVoiceTutorial();
             playGentleChime();
             const modal = document.getElementById('activeCallModal');
             const title = document.getElementById('activeCallTitle');
